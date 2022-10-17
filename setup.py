@@ -1,4 +1,4 @@
-from setuptools import setup, Extension
+from distutils.core import setup, Extension
 
 
 # Get the relative zopflipng source location
@@ -25,26 +25,6 @@ zopflipng_src = get_zopflipng_source([
     'zopflipng/zopflipng_lib.cc'
 ])
 
-# include header file
-include_file = get_zopflipng_source([
-    'zopfli/blocksplitter.h',
-    'zopfli/cache.h',
-    'zopfli/deflate.h',
-    'zopfli/gzip_container.h',
-    'zopfli/hash.h',
-    'zopfli/katajainen.h',
-    'zopfli/lz77.h',
-    'zopfli/squeeze.h',
-    'zopfli/symbols.h',
-    'zopfli/tree.h',
-    'zopfli/util.h',
-    'zopfli/zlib_container.h',
-    'zopfli/zopfli.h',
-    'zopflipng/lodepng/lodepng_util.h',
-    'zopflipng/lodepng/lodepng.h',
-    'zopflipng/zopflipng_lib.h'
-])
-
 # python wrapper
 zopflipng_src.extend([
     'src/py_zopflipng.cc'
@@ -54,19 +34,19 @@ zopflipng_src.extend([
 module_zopflipng = Extension('zopflipng._clib',
                              language="c++",
                              sources=zopflipng_src,
-                             include_file=include_file, )
+                             include_dirs=['zopfli/src/zopfli', 'zopfli/src/zopflipng'], )
 
 setup(name='zopflipng',
-      version='1.0.2',
+      version='1.1.1',
       description='Zopflipng wrapper for python,used for lossless compression of PNG',
-      author ='hhoy',
+      author='clovero',
       license='Apache',
-      author_email='utf-16@qq.com',
-      url="https://github.com/hhoy/python-zopflipng.git",
+      author_email='clovero@foxmail.com',
+      url="https://github.com/clovero/python-zopflipng.git",
       long_description_content_type='text/markdown',
       long_description=open('README.md', encoding='utf-8').read(),
       ext_modules=[module_zopflipng],
       include_package_data=True,
       package_dir={'': 'src'},
-      packages =['zopflipng'],
+      packages=['zopflipng'],
       platforms="any")

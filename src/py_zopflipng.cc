@@ -1,4 +1,4 @@
-#include "../zopfli/src/zopflipng/zopflipng_lib.h"
+#include <zopflipng_lib.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <Python.h>
@@ -8,29 +8,23 @@ extern "C" {
 static char docs[] = "";
 
 static PyObject * PNGOptimize(PyObject *self,PyObject *args){
-    PyBytesObject *buffer;
-    bool verbose=true;
-    bool lossy_transparent;
-    bool lossy_8bit;
-    const char * filter_strategies;
-    PyListObject *keepchunks;
-    bool use_zopfli=true;
+    Py_buffer buffer;
+    int verbose=true;
+    int lossy_transparent;
+    int lossy_8bit;
+    char * filter_strategies;
+    PyObject *keep_chunks = Py_None;
+    int use_zopfli=true;
     int num_iterations;
     int num_iterations_large;
     
     // https://docs.python.org/zh-cn/3.8/c-api/arg.html#c.PyArg_ParseTuple
-    if (!PyArg_ParseTuple(args, "S|pppzOpii", &buffer,&verbose,&lossy_transparent,&lossy_8bit,&filter_strategies,&keepchunks,&use_zopfli,&num_iterations,&num_iterations_large))
+    if (!PyArg_ParseTuple(args, "y*|pppzOpii", &buffer,&verbose,&lossy_transparent,&lossy_8bit,&filter_strategies,&keep_chunks,&use_zopfli,&num_iterations,&num_iterations_large))
         return NULL;
-    char *origpng_buffer =PyBytes_AS_STRING(buffer);
-    Py_ssize_t length =PyBytes_GET_SIZE(buffer);
-    
-    const std::vector<unsigned char> origpng(origpng_buffer, origpng_buffer + length);
-    std::vector<unsigned char> resultpng;
-
+    printf("lossy_8bit = %d, lossy_transparent = %d\n", lossy_8bit, lossy_transparent);
     ZopfliPNGOptions png_options;
     png_options.lossy_transparent =lossy_transparent;
     png_options.lossy_8bit =lossy_8bit;
-
     if(filter_strategies){
         for (size_t j = 0,count=strlen(filter_strategies); j < count; j++) {
           ZopfliPNGFilterStrategy strategy = kStrategyZero;
@@ -55,12 +49,12 @@ static PyObject * PNGOptimize(PyObject *self,PyObject *args){
           png_options.auto_filter_strategy = false;
     }
     }
-    if((void *)keepchunks!=Py_None){
-        for(size_t i =0, count =PyList_GET_SIZE(keepchunks);i<count; i++){
-            PyObject *pychunk = PyList_GET_ITEM(keepchunks,i);
+    if(keep_chunks != Py_None){
+        for(size_t i =0, count =PyList_GET_SIZE(keep_chunks);i<count; i++){
+            PyObject *pychunk = PyList_GET_ITEM(keep_chunks,i);
             const char *chunk;
             if(!PyArg_Parse(pychunk,"s",&chunk)){
-                printf("chunks item type should be string");
+                printf("chunks item type should be string\n");
                 return NULL;
             }
             png_options.keepchunks.push_back(chunk);
@@ -70,6 +64,8 @@ static PyObject * PNGOptimize(PyObject *self,PyObject *args){
     png_options.num_iterations =num_iterations;
     png_options.num_iterations_large=num_iterations_large;
 
+    const std::vector<unsigned char> origpng((char *)buffer.buf,(char *)buffer.buf + buffer.len);
+    std::vector<unsigned char> resultpng;
     int ret = ZopfliPNGOptimize(origpng, png_options, verbose, &resultpng);
     PyObject *result_bytes = PyBytes_FromStringAndSize((char*)&resultpng[0],resultpng.size());
     PyObject *code = PyLong_FromSize_t(ret);
@@ -77,7 +73,7 @@ static PyObject * PNGOptimize(PyObject *self,PyObject *args){
 }
 
 static PyMethodDef Methods[] = {
-    {"zopfli_png_optimize", PNGOptimize, METH_VARARGS}, 
+    {"zopfli_png_optimize", PNGOptimize, METH_VARARGS},
     {NULL, NULL}
 };
 

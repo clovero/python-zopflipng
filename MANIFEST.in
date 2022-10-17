@@ -1,0 +1,3 @@
+recursive-include zopfli/src/zopfli *.h
+recursive-include zopfli/src/zopflipng *.h
+recursive-include zopfli/src/zopflipng/lodepng *.h
